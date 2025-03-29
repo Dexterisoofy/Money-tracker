@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donation Tracker</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .raised-amount {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        input[type="number"] {
+            padding: 10px;
+            font-size: 1em;
+            margin-bottom: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            margin: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="raised-amount" id="raisedAmount">$0 RAISED</div>
+        <input type="number" id="donationAmount" placeholder="Enter amount to donate">
+        <button onclick="addDonation()">Donate</button>
+        <button onclick="saveAmount()">Save</button>
+    </div>
+
+    <script>
+        let totalRaised = 0;
+
+        function updateRaisedAmount() {
+            document.getElementById('raisedAmount').innerText = `$${totalRaised.toLocaleString()} RAISED`;
+        }
+
+        async function addDonation() {
+            const donationInput = document.getElementById('donationAmount');
+            const donationAmount = parseFloat(donationInput.value);
+            if (!isNaN(donationAmount) && donationAmount > 0) {
+                try {
+                    const response = await fetch('/donate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ amount: donationAmount })
+                    });
+                    if (response.ok) {
+                        totalRaised += donationAmount;
+                        updateRaisedAmount();
+                        donationInput.value = '';
+                    } else {
+                        alert('Failed to donate. Please try again.');
+                    }
+                } catch (error) {
+                    alert('Failed to donate. Please try again.');
+                }
+            } else {
+                alert('Please enter a valid donation amount.');
+            }
+        }
+
+        async function saveAmount() {
+            try {
+                const response = await fetch('/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ total_raised: totalRaised })
+                });
+                if (response.ok) {
+                    alert(`Saved $${totalRaised.toLocaleString()}`);
+                } else {
+                    alert('Failed to save. Please try again.');
+                }
+            } catch (error) {
+                alert('Failed to save. Please try again.');
+            }
+        }
+
+        // Fetch initial total raised amount
+        async function fetchTotalRaised() {
+            try {
+                const response = await fetch('/total-raised');
+                if (response.ok) {
+                    const data = await response.json();
+                    totalRaised = data.total_raised;
+                    updateRaisedAmount();
+                } else {
+                    alert('Failed to fetch total raised amount.');
+                }
+            } catch (error) {
+                alert('Failed to fetch total raised amount.');
+            }
+        }
+
+        // Fetch the initial total raised amount on page load
+        fetchTotalRaised();
+    </script>
+</body>
+</html>
